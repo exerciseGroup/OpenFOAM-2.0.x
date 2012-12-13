@@ -31,6 +31,8 @@ Description
 #include "UOPstream.H"
 #include "PstreamGlobals.H"
 
+#include "cpuTime.H" // added by Howe
+
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 bool Foam::UOPstream::write
@@ -51,9 +53,16 @@ bool Foam::UOPstream::write
     }
 
     bool transferFailed = true;
-
+	cpuTime	timer; // added by Howe
+	double tmpT=0; // added by Howe
+//add by RXG: begin
+	baseCommInfo* tempRecord = Foam::Time::commProfiler_.commRecord(myProcNo(),procID(toProcNo),bufSize, commsType);
+//add by RXG: end
+//	Foam::Time::commProfiler_.testTT(); // added by Howe
     if (commsType == blocking)
     {
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
+	
         transferFailed = MPI_Bsend
         (
             const_cast<char*>(buf),
@@ -63,6 +72,8 @@ bool Foam::UOPstream::write
             tag,
             MPI_COMM_WORLD
         );
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
+	Foam::Time::commProfiler_.sendRecord(0,tmpT); // added by Howe
 
         if (debug)
         {
@@ -74,7 +85,9 @@ bool Foam::UOPstream::write
     }
     else if (commsType == scheduled)
     {
-        transferFailed = MPI_Send
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
+	
+	transferFailed = MPI_Send
         (
             const_cast<char*>(buf),
             bufSize,
@@ -83,8 +96,11 @@ bool Foam::UOPstream::write
             tag,
             MPI_COMM_WORLD
         );
-
-        if (debug)
+	
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
+	Foam::Time::commProfiler_.sendRecord(1,tmpT); // added by Howe
+	
+	if (debug)
         {
             Pout<< "UOPstream::write : finished write to:" << toProcNo
                 << " tag:" << tag << " size:" << label(bufSize)
@@ -95,7 +111,8 @@ bool Foam::UOPstream::write
     else if (commsType == nonBlocking)
     {
         MPI_Request request;
-
+	
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
         transferFailed = MPI_Isend
         (
             const_cast<char*>(buf),
@@ -106,6 +123,9 @@ bool Foam::UOPstream::write
             MPI_COMM_WORLD,
             &request
         );
+
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
+	Foam::Time::commProfiler_.sendRecord(2,tmpT); // added by Howe	
 
         if (debug)
         {
@@ -129,6 +149,12 @@ bool Foam::UOPstream::write
             << UPstream::commsTypeNames[commsType]
             << Foam::abort(FatalError);
     }
+
+//add by Xiaow:begin
+	if(tempRecord!=NULL)
+		tempRecord->setEndTime();
+//add by Xiaow:end
+
 
     return !transferFailed;
 }

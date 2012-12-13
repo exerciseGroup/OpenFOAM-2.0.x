@@ -29,6 +29,9 @@ License
 #include "PstreamReduceOps.H"
 #include "OSspecific.H"
 #include "PstreamGlobals.H"
+#include "SubList.H"
+
+#include "cpuTime.H" // added by Howe
 
 #include <cstring>
 #include <cstdlib>
@@ -71,7 +74,7 @@ bool Foam::UPstream::init(int& argc, char**& argv)
 
     if (debug)
     {
-        Pout<< "UPstream::init : initialised with numProcs:" << numprocs
+      Pout<< "RXG with Info-------UPstream::init : initialised with numProcs:" << numprocs
             << " myProcNo:" << myProcNo_ << endl;
     }
 
@@ -95,6 +98,7 @@ bool Foam::UPstream::init(int& argc, char**& argv)
 #   ifndef SGIMPI
     string bufferSizeName = getEnv("MPI_BUFFER_SIZE");
 
+
     if (bufferSizeName.size())
     {
         int bufferSize = atoi(bufferSizeName.c_str());
@@ -117,12 +121,17 @@ bool Foam::UPstream::init(int& argc, char**& argv)
     char processorName[MPI_MAX_PROCESSOR_NAME];
 
     MPI_Get_processor_name(processorName, &processorNameLen);
-
+Pout<<"RXG "<<myProcNo_<<" of "<<numprocs<<"---------"<<processorName<<": "<<getpid()<<endl;
     //signal(SIGABRT, stop);
 
     // Now that nprocs is known construct communication tables.
     initCommunicationSchedule();
-
+//add by RXG: begin
+int debugWait=0;
+Pout<<"RXG is waiting for debug......."<<endl<<endl;
+while(debugWait);
+Pout<<"RXG will start to debug......."<<endl<<endl;
+//add by RXG : end
     return true;
 }
 
@@ -133,6 +142,10 @@ void Foam::UPstream::exit(int errnum)
     {
         Pout<< "UPstream::exit." << endl;
     }
+//add by RXG: begin
+//    Foam::Time::writeProfilerAll();
+//add by RXG:end
+//Pout<<"exit11111111111111111111"<<endl;
 
 #   ifndef SGIMPI
     int size;
@@ -172,8 +185,12 @@ void Foam::UPstream::abort()
 }
 
 
-void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
+void Foam::reduce(scalar& Value, const sumOp<scalar>& bop, const int tag)
 {
+
+    cpuTime timer; // added by Howe
+
+    
     if (Pstream::debug)
     {
         Pout<< "Foam::reduce : value:" << Value << endl;
@@ -183,9 +200,17 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
     {
         return;
     }
+	//add by RXG: begin
+	baseCommInfo* tempRecord = Foam::Time::commProfiler_.commRecord(UPstream::myProcNo(),-1,sizeof(scalar), Foam::UPstream::scheduled);
+	//add by RXG: end
 
+    double tmpT=0; // added by Howe
+    
     if (UPstream::nProcs() <= UPstream::nProcsSimpleSum)
     {
+	
+    	tmpT=timer.cpuTimeIncrement(); // added by Howe
+
         if (UPstream::master())
         {
             for
@@ -205,7 +230,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                         1,
                         MPI_SCALAR,
                         UPstream::procID(slave),
-                        UPstream::msgType(),
+                        tag,
                         MPI_COMM_WORLD,
                         MPI_STATUS_IGNORE
                     )
@@ -231,7 +256,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                     1,
                     MPI_SCALAR,
                     UPstream::procID(UPstream::masterNo()),
-                    UPstream::msgType(),
+                    tag,
                     MPI_COMM_WORLD
                 )
             )
@@ -242,6 +267,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                 )   << "MPI_Send failed"
                     << Foam::abort(FatalError);
             }
+		
         }
 
 
@@ -262,7 +288,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                         1,
                         MPI_SCALAR,
                         UPstream::procID(slave),
-                        UPstream::msgType(),
+                        tag,
                         MPI_COMM_WORLD
                     )
                 )
@@ -273,6 +299,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                     )   << "MPI_Send failed"
                         << Foam::abort(FatalError);
                 }
+		
             }
         }
         else
@@ -285,7 +312,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                     1,
                     MPI_SCALAR,
                     UPstream::procID(UPstream::masterNo()),
-                    UPstream::msgType(),
+                    tag,
                     MPI_COMM_WORLD,
                     MPI_STATUS_IGNORE
                 )
@@ -298,12 +325,24 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                     << Foam::abort(FatalError);
             }
         }
+	
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
+	Foam::Time::commProfiler_.sendRecord(3,tmpT); // added by Howe	
+//   	Pout<< "*********Allreduce Time :" << tmpT <<"*********"<< Foam::endl; 
     }
+    
     else
     {
         scalar sum;
+	
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
+
         MPI_Allreduce(&Value, &sum, 1, MPI_SCALAR, MPI_SUM, MPI_COMM_WORLD);
-        Value = sum;
+	
+	tmpT=timer.cpuTimeIncrement(); // added by Howe
+	Foam::Time::commProfiler_.sendRecord(3,tmpT); // added by Howe	
+     
+	Value = sum;
 
         /*
         int myProcNo = UPstream::myProcNo();
@@ -337,7 +376,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                         1,
                         MPI_SCALAR,
                         UPstream::procID(childProcId),
-                        UPstream::msgType(),
+                        tag,
                         MPI_COMM_WORLD,
                         MPI_STATUS_IGNORE
                     )
@@ -373,7 +412,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                     1,
                     MPI_SCALAR,
                     UPstream::procID(parentId),
-                    UPstream::msgType(),
+                    tag,
                     MPI_COMM_WORLD
                 )
             )
@@ -393,7 +432,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                     1,
                     MPI_SCALAR,
                     UPstream::procID(parentId),
-                    UPstream::msgType(),
+                    tag,
                     MPI_COMM_WORLD,
                     MPI_STATUS_IGNORE
                 )
@@ -429,7 +468,7 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
                         1,
                         MPI_SCALAR,
                         UPstream::procID(childProcId),
-                        UPstream::msgType(),
+                        tag,
                         MPI_COMM_WORLD
                     )
                 )
@@ -449,6 +488,11 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
         */
     }
 
+	//add by Xiaow:begin
+	if(tempRecord!=NULL)
+		tempRecord->setEndTime();
+//add by Xiaow:end
+
     if (Pstream::debug)
     {
         Pout<< "Foam::reduce : reduced value:" << Value << endl;
@@ -456,23 +500,45 @@ void Foam::reduce(scalar& Value, const sumOp<scalar>& bop)
 }
 
 
-void Foam::UPstream::waitRequests()
+Foam::label Foam::UPstream::nRequests()
+{
+    return PstreamGlobals::outstandingRequests_.size();
+}
+
+
+void Foam::UPstream::resetRequests(const label i)
+{
+    if (i < PstreamGlobals::outstandingRequests_.size())
+    {
+        PstreamGlobals::outstandingRequests_.setSize(i);
+    }
+}
+
+
+void Foam::UPstream::waitRequests(const label start)
 {
     if (debug)
     {
         Pout<< "UPstream::waitRequests : starting wait for "
-            << PstreamGlobals::outstandingRequests_.size()
-            << " outstanding requests." << endl;
+            << PstreamGlobals::outstandingRequests_.size()-start
+            << " outstanding requests starting at " << start << endl;
     }
 
     if (PstreamGlobals::outstandingRequests_.size())
     {
+        SubList<MPI_Request> waitRequests
+        (
+            PstreamGlobals::outstandingRequests_,
+            PstreamGlobals::outstandingRequests_.size() - start,
+            start
+        );
+
         if
         (
             MPI_Waitall
             (
-                PstreamGlobals::outstandingRequests_.size(),
-                PstreamGlobals::outstandingRequests_.begin(),
+                waitRequests.size(),
+                waitRequests.begin(),
                 MPI_STATUSES_IGNORE
             )
         )
@@ -483,7 +549,7 @@ void Foam::UPstream::waitRequests()
             )   << "MPI_Waitall returned with error" << Foam::endl;
         }
 
-        PstreamGlobals::outstandingRequests_.clear();
+        resetRequests(start);
     }
 
     if (debug)
