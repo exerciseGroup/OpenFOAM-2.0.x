@@ -44,7 +44,13 @@ processorFvPatchField<Type>::processorFvPatchField
 :
     coupledFvPatchField<Type>(p, iF),
     procPatch_(refCast<const processorFvPatch>(p))
-{}
+{
+	//add by Xiaowei:begin
+	const myLabelList& faceCells = this->patch().faceCells();
+	Time::setFaceCells(&faceCells);
+	//add by Xiaowei:end
+
+}
 
 
 template<class Type>
@@ -57,7 +63,14 @@ processorFvPatchField<Type>::processorFvPatchField
 :
     coupledFvPatchField<Type>(p, iF, f),
     procPatch_(refCast<const processorFvPatch>(p))
-{}
+{
+
+    //add by Xiaowei:begin
+    const myLabelList& faceCells = this->patch().faceCells();
+    Time::setFaceCells(&faceCells);
+    //add by Xiaowei:end
+
+}
 
 
 // Construct by mapping given processorFvPatchField<Type>
@@ -91,6 +104,12 @@ processorFvPatchField<Type>::processorFvPatchField
             << " in file " << this->dimensionedInternalField().objectPath()
             << exit(FatalIOError);
     }
+
+	//add by Xiaowei:begin
+
+	const myLabelList& faceCells = this->patch().faceCells();
+	Time::setFaceCells(&faceCells);
+    //add by Xiaowei:end
 }
 
 
@@ -123,6 +142,12 @@ processorFvPatchField<Type>::processorFvPatchField
             << " in file " << this->dimensionedInternalField().objectPath()
             << exit(FatalIOError);
     }
+
+
+	    //add by Xiaowei:begin
+	const myLabelList& faceCells = this->patch().faceCells();
+	Time::setFaceCells(&faceCells);
+    //add by Xiaowei:end
 }
 
 
@@ -135,7 +160,13 @@ processorFvPatchField<Type>::processorFvPatchField
     processorLduInterfaceField(),
     coupledFvPatchField<Type>(ptf),
     procPatch_(refCast<const processorFvPatch>(ptf.patch()))
-{}
+{
+		//add by Xiaowei:begin
+
+		const myLabelList& faceCells = this->patch().faceCells();
+		Time::setFaceCells(&faceCells);
+		//add by Xiaowei:end
+}
 
 
 template<class Type>
@@ -147,7 +178,14 @@ processorFvPatchField<Type>::processorFvPatchField
 :
     coupledFvPatchField<Type>(ptf, iF),
     procPatch_(refCast<const processorFvPatch>(ptf.patch()))
-{}
+{
+		//add by Xiaowei:begin
+		
+		const myLabelList& faceCells = this->patch().faceCells();
+		Time::setFaceCells(&faceCells);
+		//add by Xiaowei:end
+
+}
 
 
 // * * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * //
@@ -174,8 +212,19 @@ void processorFvPatchField<Type>::initEvaluate
 {
     if (Pstream::parRun())
     {
-        procPatch_.compressedSend(commsType, this->patchInternalField()());
-    }
+
+	//add by Xiaow: begin
+    Foam::Time::enterSec("initEvaluate");
+    //add by Xiaow: end
+    
+    procPatch_.compressedSend(commsType, this->patchInternalField()());
+
+   	//add by Xiaow: begin
+    Foam::Time::leaveSec();
+    //add by Xiaow: end
+
+	}
+
 }
 
 
@@ -193,13 +242,17 @@ void processorFvPatchField<Type>::evaluate
         {
             transform(*this, procPatch_.forwardT(), *this);
         }
+
     }
+
+	
 }
 
 
 template<class Type>
 tmp<Field<Type> > processorFvPatchField<Type>::snGrad() const
 {
+    
     return this->patch().deltaCoeffs()*(*this - this->patchInternalField());
 }
 
@@ -215,11 +268,23 @@ void processorFvPatchField<Type>::initInterfaceMatrixUpdate
     const Pstream::commsTypes commsType
 ) const
 {
+
+    //add by Xiaow: begin
+    Foam::Time::enterSec("initInterfaceMatrixUpdate");
+    //add by Xiaow: end
+
     procPatch_.compressedSend
     (
         commsType,
         this->patch().patchInternalField(psiInternal)()
     );
+
+	//add by Xiaow: begin
+    Foam::Time::leaveSec();
+    //add by Xiaow: end
+
+
+
 }
 
 
@@ -244,7 +309,12 @@ void processorFvPatchField<Type>::updateInterfaceMatrix
 
     // Multiply the field by coefficients and add into the result
 
-    const labelUList& faceCells = this->patch().faceCells();
+    const myLabelList& faceCells = this->patch().faceCells();
+
+//add by Xiaowei:begin
+//	Time::setFaceCells(&faceCells);
+
+//add by Xiaowei:end
 
     forAll(faceCells, elemI)
     {

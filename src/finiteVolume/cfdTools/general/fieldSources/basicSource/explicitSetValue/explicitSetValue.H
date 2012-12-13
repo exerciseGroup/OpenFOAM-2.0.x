@@ -29,27 +29,26 @@ Description
 
     Sources described by:
 
-    explicitSetValueCoeffs
-    {
-        fieldData            // field data - usage for multiple fields
+        <Type>ExplicitSetValueCoeffs
         {
-            k   30.7;
-            epsilon  1.5;
+            injectionRate
+            {
+                k           30.7;
+                epsilon     1.5;
+            }
         }
-    }
+
 
 SourceFiles
     explicitSetValue.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef explicitSetValue_H
-#define explicitSetValue_H
+#ifndef ExplicitSetValue_H
+#define ExplicitSetValue_H
 
-#include "cellSet.H"
-#include "volFieldsFwd.H"
-#include "DimensionedField.H"
 #include "basicSource.H"
+#include "Tuple2.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -60,37 +59,18 @@ namespace Foam
                        Class explicitSetValue Declaration
 \*---------------------------------------------------------------------------*/
 
-class explicitSetValue
+template<class Type>
+class ExplicitSetValue
 :
     public basicSource
 {
-    // Private data
-
-        //- List of field types
-        HashTable<scalar> scalarFields_;
-        HashTable<vector> vectorFields_;
-
-        //- Set value to field
-        template<class Type>
-        void setFieldValue(fvMatrix<Type>&, const Type&) const;
-
-        //- Add field names and values to field table for types.
-        template<class Type>
-        void addField
-        (
-            HashTable<Type>& fields,
-            const wordList& fieldTypes,
-            const wordList& fieldNames,
-            const dictionary& dict
-        );
-
 
 protected:
 
     // Protected data
 
-         //- Sub dictionary for time activated explicit sources
-        const dictionary& dict_;
+        //- Source value per field
+        List<Type> injectionRate_;
 
 
     // Protected functions
@@ -108,7 +88,7 @@ public:
     // Constructors
 
         //- Construct from components
-        explicitSetValue
+        ExplicitSetValue
         (
             const word& name,
             const word& modelType,
@@ -116,33 +96,13 @@ public:
             const fvMesh& mesh
         );
 
-        //- Return clone
-        autoPtr<explicitSetValue> clone() const
-        {
-            notImplemented
-            (
-                "autoPtr<explicitSetValue> clone() const"
-            );
-            return autoPtr<explicitSetValue>(NULL);
-        }
-
 
     // Member Functions
-
-
-        // Edit
-
-            //- Return points
-            inline  const List<point>& points() const;
-
 
         // Evaluation
 
             //- Set value on vector field
-            virtual void setValue(fvMatrix<vector>& UEqn);
-
-            //- Set value on scalar field
-            virtual void setValue(fvMatrix<scalar>& UEqn);
+            virtual void setValue(fvMatrix<Type>& eqn, const label fieldI);
 
 
         // I-O
@@ -150,15 +110,8 @@ public:
             //- Write the source properties
             virtual void writeData(Ostream&) const;
 
-            //- Read fieldData in sub-dictionary
+            //- Read source dictionary
             virtual bool read(const dictionary& dict);
-
-            //- Ostream operator
-            friend Ostream& operator<<
-            (
-                Ostream& os,
-                const explicitSetValue& source
-            );
 };
 
 
@@ -168,13 +121,9 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#include "explicitSetValueIO.C"
-#include "explicitSetValueI.H"
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
 #ifdef NoRepository
-#   include "explicitSetValueTemplates.C"
+#   include "ExplicitSetValue.C"
+#   include "ExplicitSetValueIO.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

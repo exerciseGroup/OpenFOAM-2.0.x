@@ -25,19 +25,20 @@ InNamespace
     Foam::fvc
 
 Description
-    Calculate the substantive (total) derivative.
+    Calculate the first temporal derivative.
 
 SourceFiles
-    fvcDDt.C
+    fvcDdt.C
 
 \*---------------------------------------------------------------------------*/
 
 
-#ifndef fvcDDt_H
-#define fvcDDt_H
+#ifndef fvcDdt_H
+#define fvcDdt_H
 
 #include "volFieldsFwd.H"
 #include "surfaceFieldsFwd.H"
+#include "dimensionedTypes.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,17 +52,75 @@ namespace Foam
 namespace fvc
 {
     template<class Type>
-    tmp<GeometricField<Type, fvPatchField, volMesh> > DDt
+    tmp<GeometricField<Type, fvPatchField, volMesh> > ddt
     (
-        const surfaceScalarField&,
+        const dimensioned<Type>,
+        const fvMesh&
+    );
+
+    template<class Type>
+    tmp<GeometricField<Type, fvPatchField, volMesh> > ddt
+    (
         const GeometricField<Type, fvPatchField, volMesh>&
     );
 
     template<class Type>
-    tmp<GeometricField<Type, fvPatchField, volMesh> > DDt
+    tmp<GeometricField<Type, fvPatchField, volMesh> > ddt
     (
-        const tmp<surfaceScalarField>&,
+        const dimensionedScalar&,
         const GeometricField<Type, fvPatchField, volMesh>&
+    );
+
+    template<class Type>
+    tmp<GeometricField<Type, fvPatchField, volMesh> > ddt
+    (
+        const volScalarField&,
+        const GeometricField<Type, fvPatchField, volMesh>&
+    );
+
+    template<class Type>
+    tmp
+    <
+        GeometricField
+        <
+            typename Foam::flux<Type>::type,
+            fvsPatchField,
+            surfaceMesh
+        >
+    >
+    ddtPhiCorr
+    (
+        const volScalarField& rA,
+        const GeometricField<Type, fvPatchField, volMesh>& U,
+        const GeometricField
+        <
+            typename Foam::flux<Type>::type,
+            fvsPatchField,
+            surfaceMesh
+        >& phi
+    );
+
+    template<class Type>
+    tmp
+    <
+        GeometricField
+        <
+            typename Foam::flux<Type>::type,
+            fvsPatchField,
+            surfaceMesh
+        >
+    >
+    ddtPhiCorr
+    (
+        const volScalarField& rA,
+        const volScalarField& rho,
+        const GeometricField<Type, fvPatchField, volMesh>& U,
+        const GeometricField
+        <
+            typename Foam::flux<Type>::type,
+            fvsPatchField,
+            surfaceMesh
+        >& phi
     );
 }
 
@@ -73,7 +132,7 @@ namespace fvc
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-#   include "fvcDDt.C"
+#   include "fvcDdt.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

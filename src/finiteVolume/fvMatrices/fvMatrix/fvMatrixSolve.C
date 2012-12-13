@@ -147,6 +147,7 @@ Foam::lduMatrix::solverPerformance Foam::fvMatrix<Type>::solve
             solverControls
         )->solve(psiCmpt, sourceCmpt, cmpt);
 
+
         solverPerf.print();
 
         solverPerfVec = max(solverPerfVec, solverPerf);

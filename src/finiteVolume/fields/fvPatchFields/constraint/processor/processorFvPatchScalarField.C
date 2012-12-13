@@ -43,11 +43,20 @@ void processorFvPatchField<scalar>::initInterfaceMatrixUpdate
     const Pstream::commsTypes commsType
 ) const
 {
+
+    //add by Xiaow: begin
+    Foam::Time::enterSec("initInterfaceMatrixUpdate");
+    //add by Xiaow: end
+
     procPatch_.compressedSend
     (
         commsType,
         patch().patchInternalField(psiInternal)()
     );
+
+	//add by Xiaow: begin
+    Foam::Time::leaveSec();
+    //add by Xiaow: end
 }
 
 

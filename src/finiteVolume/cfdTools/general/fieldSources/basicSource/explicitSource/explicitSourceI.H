@@ -23,28 +23,37 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "explicitSource.H"
+#include "ExplicitSource.H"
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-inline const Foam::explicitSource::volumeModeType&
-Foam::explicitSource::volumeMode() const
+template<class Type>
+inline const typename Foam::ExplicitSource<Type>::volumeModeType&
+Foam::ExplicitSource<Type>::volumeMode() const
 {
     return volumeMode_;
 }
 
 
-inline Foam::explicitSource::volumeModeType&
-Foam::explicitSource::volumeMode()
+template<class Type>
+inline const Foam::List<Type>& Foam::ExplicitSource<Type>::injectionRate() const
+{
+    return injectionRate_;
+}
+
+
+template<class Type>
+inline typename Foam::ExplicitSource<Type>::volumeModeType&
+Foam::ExplicitSource<Type>::volumeMode()
 {
     return volumeMode_;
 }
 
 
-inline const Foam::List<Foam::point>&
-Foam::explicitSource::points() const
+template<class Type>
+inline Foam::List<Type>& Foam::ExplicitSource<Type>::injectionRate()
 {
-    return points_;
+    return injectionRate_;
 }
 
 

@@ -23,56 +23,30 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "explicitSetValue.H"
+#include "ExplicitSetValue.H"
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::explicitSetValue::writeData(Ostream& os) const
+template<class Type>
+void Foam::ExplicitSetValue<Type>::writeData(Ostream& os) const
 {
-    os  << indent << name_ << nl
-        << indent << token::BEGIN_BLOCK << incrIndent << nl;
-
-    if (scalarFields_.size() > 0)
-    {
-        os.writeKeyword("scalarFields") << scalarFields_
-            << token::END_STATEMENT << nl;
-    }
-
-    if (vectorFields_.size() > 0)
-    {
-        os.writeKeyword("vectorFields") << vectorFields_
-            << token::END_STATEMENT << nl;
-    }
-
-    os << decrIndent << indent << token::END_BLOCK << endl;
+    os  << indent << name_ << endl;
+    dict_.write(os);
 }
 
 
-bool Foam::explicitSetValue::read(const dictionary& dict)
+template<class Type>
+bool Foam::ExplicitSetValue<Type>::read(const dictionary& dict)
 {
     if (basicSource::read(dict))
     {
-        const dictionary& sourceDict = dict.subDict(name());
-        const dictionary& subDictCoeffs = sourceDict.subDict
-        (
-            typeName + "Coeffs"
-        );
-        setFieldData(subDictCoeffs.subDict("fieldData"));
+        setFieldData(coeffs_.subDict("injectionRate"));
         return true;
     }
     else
     {
         return false;
     }
-}
-
-
-// * * * * * * * * * * * * * * * IOstream Operators  * * * * * * * * * * * * //
-
-Foam::Ostream& Foam::operator<<(Ostream& os, const explicitSetValue& source)
-{
-    source.writeData(os);
-    return os;
 }
 
 

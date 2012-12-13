@@ -23,71 +23,35 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "explicitSetValue.H"
+#include "ExplicitSetValue.H"
 #include "fvMesh.H"
-#include "volFields.H"
-#include "addToRunTimeSelectionTable.H"
-#include "HashSet.H"
-
-// * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * * //
-
-namespace Foam
-{
-    defineTypeNameAndDebug(explicitSetValue, 0);
-    addToRunTimeSelectionTable
-    (
-        basicSource,
-        explicitSetValue,
-        dictionary
-    );
-}
-
+#include "fvMatrices.H"
+#include "DimensionedField.H"
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
-void Foam::explicitSetValue::setFieldData(const dictionary& dict)
+template<class Type>
+void Foam::ExplicitSetValue<Type>::setFieldData(const dictionary& dict)
 {
-    scalarFields_.clear();
-    vectorFields_.clear();
+    fieldNames_.setSize(dict.toc().size());
+    injectionRate_.setSize(fieldNames_.size());
 
-    wordList fieldTypes(dict.toc().size());
-    wordList fieldNames(dict.toc().size());
+    applied_.setSize(fieldNames_.size(), false);
 
-    forAll(dict.toc(), i)
+    label i = 0;
+    forAllConstIter(dictionary, dict, iter)
     {
-        const word& fieldName = dict.toc()[i];
-        IOobject io
-        (
-            fieldName,
-            this->mesh().time().timeName(),
-            this->mesh(),
-            IOobject::NO_READ,
-            IOobject::NO_WRITE,
-            false
-        );
-        if (io.headerOk())
-        {
-            fieldTypes[i] = io.headerClassName();
-            fieldNames[i] = dict.toc()[i];
-        }
-        else
-        {
-            FatalErrorIn
-            (
-                "explicitSetValue::setFieldData"
-            )   << "header not OK " << io.name()
-                << exit(FatalError);
-        }
+        fieldNames_[i] = iter().keyword();
+        dict.lookup(iter().keyword()) >> injectionRate_[i];
+        i++;
     }
-
-    addField(scalarFields_, fieldTypes, fieldNames, dict);
-    addField(vectorFields_, fieldTypes, fieldNames, dict);
 }
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::explicitSetValue::explicitSetValue
+template<class Type>
+Foam::ExplicitSetValue<Type>::ExplicitSetValue
 (
     const word& name,
     const word& modelType,
@@ -96,21 +60,32 @@ Foam::explicitSetValue::explicitSetValue
 )
 :
     basicSource(name, modelType, dict, mesh),
-    dict_(dict.subDict(modelType + "Coeffs"))
+    injectionRate_()
 {
-    setFieldData(dict_.subDict("fieldData"));
+    read(dict);
 }
 
 
-void Foam::explicitSetValue::setValue(fvMatrix<scalar>& Eqn)
-{
-    setFieldValue(Eqn, scalarFields_[Eqn.psi().name()]);
-}
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-
-void Foam::explicitSetValue::setValue(fvMatrix<vector>& Eqn)
+template<class Type>
+void Foam::ExplicitSetValue<Type>::setValue
+(
+    fvMatrix<Type>& eqn,
+    const label fieldI
+)
 {
-    setFieldValue(Eqn, vectorFields_[Eqn.psi().name()]);
+    if (debug)
+    {
+        Info<< "ExplicitSetValue<"<< pTraits<Type>::typeName
+            << ">::setValue for source " << name_ << endl;
+    }
+
+    List<Type> values(cells_.size());
+
+    UIndirectList<Type>(values, cells_) = injectionRate_[fieldI];
+
+    eqn.setValues(cells_, values);
 }
 
 
