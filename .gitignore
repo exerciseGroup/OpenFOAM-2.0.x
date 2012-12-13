@@ -84,4 +84,7 @@ doc/Doxygen/DTAGS
 /.cproject
 /.project
 
+# ignore log files
+/.log
+
 # end-of-file
