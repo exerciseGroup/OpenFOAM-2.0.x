@@ -39,6 +39,8 @@ SourceFiles
 #include "autoPtr.H"
 #include "lduInterfacePtrsList.H"
 
+#include "lduPrimitiveMesh.H" // add by NUDT Exercise Group-RXG
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -69,6 +71,11 @@ protected:
         //- Face restrict addressing
         labelField faceRestrictAddressing_;
 
+//add by NUDT Exercise Group-RXG: begin
+        //- Reference to ldu addressing
+        const lduPrimitiveMesh& lduMesh_;
+
+//add by NUDT Exercise Group-RXG: end
 
 private:
 
@@ -86,7 +93,8 @@ public:
     //- Runtime type information
     TypeName("GAMGInterface");
 
-
+// delete by NUDT Exercise Group-RXG: begin
+/*
     // Declare run-time constructor selection tables
 
         declareRunTimeSelectionTable
@@ -109,7 +117,45 @@ public:
                 neighbourRestrictAddressing
             )
         );
+*/
+// delete by NUDT Exercise Group-RXG: end
 
+// add by NUDT Exercise Group-RXG: begin
+
+        declareRunTimeSelectionTable2
+        (
+            autoPtr,
+            GAMGInterface,
+            lduInterface,
+            (
+                const lduPrimitiveMesh& lduMesh,
+                const lduInterface& fineInterface,
+                const labelField& localRestrictAddressing,
+                const labelField& neighbourRestrictAddressing
+            ),
+            (
+                const label index,
+                const lduInterfacePtrsList& coarseInterfaces,
+                const lduInterface& fineInterface,
+                const labelField& localRestrictAddressing,
+                const labelField& neighbourRestrictAddressing
+            ),
+            (
+                lduMesh,
+                fineInterface,
+                localRestrictAddressing,
+                neighbourRestrictAddressing
+            ),
+            (
+                index,
+                coarseInterfaces,
+                fineInterface,
+                localRestrictAddressing,
+                neighbourRestrictAddressing
+            )
+        );
+
+// add by NUDT Exercise Group-RXG: end
 
     // Selectors
 
@@ -124,6 +170,35 @@ public:
             const labelField& neighbourRestrictAddressing
         );
 
+// add by NUDT Exercise Group-RXG: begin
+    // Selectors
+
+        //- Return a pointer to a new interface created on freestore given
+        //  the fine interface
+        static autoPtr<GAMGInterface> New
+        (
+            const lduPrimitiveMesh& lduMesh,
+            const lduInterface& fineInterface,
+            const labelField& localRestrictAddressing,
+            const labelField& neighbourRestrictAddressing
+        );
+
+// add by NUDT Exercise Group-RXG: end
+
+
+// add by NUDT Exercise Group-RXG: begin
+    // Constructors
+
+        //- Construct from fine-level interface,
+        //  local and neighbour restrict addressing
+        GAMGInterface(const lduPrimitiveMesh& lduMesh)
+        :
+            index_(0),// add by NUDT Exercise Group-RXG
+            lduMesh_(lduMesh),
+            coarseInterfaces_(*(new lduInterfacePtrsList()))// add by NUDT Exercise Group-RXG
+        {}
+
+// add by NUDT Exercise Group-RXG: end
 
     // Constructors
 
@@ -139,6 +214,9 @@ public:
         )
         :
             index_(index),
+// add by NUDT Exercise Group-RXG: begin
+            lduMesh_(*(new lduPrimitiveMesh(0,labelList::null(),labelList::null()))),
+// add by NUDT Exercise Group-RXG: end
             coarseInterfaces_(coarseInterfaces)
         {}
 

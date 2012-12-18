@@ -24,13 +24,18 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "lduMatrix.H"
-
+#include "diagonalSolver.H"
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
-    defineRunTimeSelectionTable(lduMatrix::preconditioner, symMatrix);
-    defineRunTimeSelectionTable(lduMatrix::preconditioner, asymMatrix);
+    //defineRunTimeSelectionTable(lduMatrix::preconditioner, symMatrix);
+    //defineRunTimeSelectionTable(lduMatrix::preconditioner, asymMatrix);
+    
+    //add by NUDT Exercise Group-Xiaowei:begin
+    defineRunTimeSelectionTable2(lduMatrix::preconditioner, symMatrix);
+    defineRunTimeSelectionTable2(lduMatrix::preconditioner, asymMatrix);
+    //add by NUDT Exercise Group-Xiaowei:end
 }
 
 
@@ -151,5 +156,151 @@ Foam::lduMatrix::preconditioner::New
     }
 }
 
+//add by NUDT Exercise Group-Xiaowei:begin
 
+Foam::autoPtr<Foam::lduPreconditioner>
+Foam::lduPreconditioner::New
+(
+    const lduMatrix& matrix,
+    const FieldField<Field, scalar>& coupleBouCoeffs,
+    const FieldField<Field, scalar>& coupleIntCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary& dict
+)
+{
+    word preconName;
+
+    // handle primitive or dictionary entry
+    const entry& e = dict.lookupEntry("preconditioner", false, false);
+    if (e.isDict())
+    {
+        e.dict().lookup("preconditioner") >> preconName;
+    }
+    else
+    {
+        e.stream() >> preconName;
+    }
+
+    const dictionary& controls = e.isDict() ? e.dict() : dictionary::null;
+
+    if (matrix.symmetric())
+    {
+        symMatrixConstructorTable1::iterator constructorIter =
+            symMatrixConstructorTablePtr_1->find(preconName);
+
+        if (constructorIter == symMatrixConstructorTablePtr_1->end())
+        { 
+           FatalIOErrorIn
+            (
+                "lduPreconditioner::New\n"
+                "(\n"
+                "    const lduMatrix& matrix,\n"
+                "    const FieldField<Field, scalar>& coupleBouCoeffs,\n"
+                "    const FieldField<Field, scalar>& coupleIntCoeffs,\n"
+                "    const lduInterfaceFieldPtrsList& interfaces,\n"
+                "    const dictionary& dict\n"
+                ")",
+                dict
+            )   << "Unknown symmetric matrix preconditioner "
+                << preconName << endl << endl
+                << "Valid symmetric matrix preconditioners are :" << endl
+                << symMatrixConstructorTablePtr_1->toc()
+                << exit(FatalIOError);
+        }
+
+        return autoPtr<lduPreconditioner>
+        (
+            constructorIter()
+            (
+                matrix,
+                coupleBouCoeffs,
+                coupleIntCoeffs,
+                interfaces,
+                controls
+            )
+        );
+    }
+    else if (matrix.asymmetric())
+    {
+        asymMatrixConstructorTable1::iterator constructorIter =
+            asymMatrixConstructorTablePtr_1->find(preconName);
+
+        if (constructorIter == asymMatrixConstructorTablePtr_1->end())
+        {
+            FatalIOErrorIn
+            (
+                "lduPreconditioner::New\n"
+                "(\n"
+                "    const lduMatrix& matrix,\n"
+                "    const FieldField<Field, scalar>& coupleBouCoeffs,\n"
+                "    const FieldField<Field, scalar>& coupleIntCoeffs,\n"
+                "    const lduInterfaceFieldPtrsList& interfaces,\n"
+                "    const dictionary& dict\n"
+                ")",
+                dict
+            )   << "Unknown asymmetric matrix preconditioner "
+                << preconName << endl << endl
+                << "Valid asymmetric matrix preconditioners are :" << endl
+                << asymMatrixConstructorTablePtr_1->toc()
+                << exit(FatalIOError);
+        }
+
+        return autoPtr<lduPreconditioner>
+        (
+            constructorIter()
+            (
+                matrix,
+                coupleBouCoeffs,
+                coupleIntCoeffs,
+                interfaces,
+                controls
+            )
+        );
+    }
+    else
+    {
+        FatalIOErrorIn
+        (
+            "lduPreconditioner::New\n"
+            "(\n"
+            "    const lduMatrix& matrix,\n"
+            "    const FieldField<Field, scalar>& coupleBouCoeffs,\n"
+            "    const FieldField<Field, scalar>& coupleIntCoeffs,\n"
+            "    const lduInterfaceFieldPtrsList& interfaces,\n"
+            "    const dictionary& dict\n"
+            ")",
+            dict
+        )   << "cannot solve incomplete matrix, "
+               "no diagonal or off-diagonal coefficient"
+            << exit(FatalIOError);
+
+        return autoPtr<lduPreconditioner>(NULL);
+    }
+}
+
+
+           Foam::lduPreconditioner:: preconditioner
+            (
+                const lduMatrix& matrix,
+                const FieldField<Field, scalar>& coupleBouCoeffs,
+                const FieldField<Field, scalar>& coupleIntCoeffs,
+                const lduInterfaceFieldPtrsList& interfaces
+            )
+            :
+           solver_(*(new diagonalSolver
+                        (
+                         "abcd",
+                matrix,
+                coupleBouCoeffs,
+                coupleIntCoeffs,
+                interfaces,
+                dictionary::null
+                        )
+                )),
+           matrix_(matrix),
+           coupleBouCoeffs_(coupleBouCoeffs),
+           coupleIntCoeffs_(coupleIntCoeffs),
+           interfaces_(interfaces)
+           {}
+//add by NUDT Exercise Group-Xiaowei:end
 // ************************************************************************* //

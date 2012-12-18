@@ -123,10 +123,62 @@ public:
         {}
 
 
+// add by NUDT Exercise Group-RXG: begin
+    // Constructors
+
+        //- Construct from components as copies
+        //  Interfaces are added upon construction.  HJ, 20/Feb/2009
+        lduPrimitiveMesh
+        (
+            const label nCells,
+            const unallocLabelList& l,
+            const unallocLabelList& u
+        )
+        :
+            lduAddressing(nCells),
+            lowerAddr_(l),
+            upperAddr_(u),
+            patchSchedule_(lduSchedule::null())
+        {}
+
+
+        //- Construct from components and re-use storage as specified.
+        lduPrimitiveMesh
+        (
+            const label nCells,
+            labelList& l,
+            labelList& u,
+            bool reUse
+        )
+        :
+            lduAddressing(nCells),
+            lowerAddr_(l, reUse),
+            upperAddr_(u, reUse),
+            patchSchedule_(lduSchedule::null())
+        {}
+
+// add by NUDT Exercise Group-RXG: end
+
+
     //- Destructor
     virtual ~lduPrimitiveMesh()
     {}
 
+// add by NUDT Exercise Group-RXG: begin
+        //- Add interfaces.  Constructor helper
+        void addInterfaces
+        (
+            const lduInterfacePtrsList& interfaces,
+            const labelListList& pa,
+            const lduSchedule& ps
+        )
+        {
+            interfaces_ = interfaces;
+            patchAddr_ = pa;
+           // patchSchedule_ = ps;
+        }
+
+// add by NUDT Exercise Group-RXG: end
 
     // Member Functions
 

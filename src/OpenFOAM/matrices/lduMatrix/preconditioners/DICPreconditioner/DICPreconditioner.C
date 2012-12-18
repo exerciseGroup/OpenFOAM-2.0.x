@@ -34,6 +34,12 @@ namespace Foam
     lduMatrix::preconditioner::
         addsymMatrixConstructorToTable<DICPreconditioner>
         addDICPreconditionerSymMatrixConstructorToTable_;
+
+//add by NUDT Exercise Group-Xiaowei:begin
+    lduMatrix::preconditioner::
+        addsymMatrixConstructorToTableAppend<DICPreconditioner>
+        addDICPreconditionerSymMatrixConstructorToTableAppend_;
+//end by NUDT Exercise Group-Xiaowei:end
 }
 
 
@@ -51,6 +57,29 @@ Foam::DICPreconditioner::DICPreconditioner
     calcReciprocalD(rD_, sol.matrix());
 }
 
+//add by NUDT Exercise Group-Xiaowei:begin
+Foam::DICPreconditioner::DICPreconditioner
+(
+    const lduMatrix& matrix,
+    const FieldField<Field, scalar>& coupleBouCoeffs,
+    const FieldField<Field, scalar>& coupleIntCoeffs,
+    const lduInterfaceFieldPtrsList& interfaces,
+    const dictionary&
+)
+:
+    lduPreconditioner
+    (
+        matrix,
+        coupleBouCoeffs,
+        coupleIntCoeffs,
+        interfaces
+    ),
+    rD_(matrix.diag())
+{
+    calcReciprocalD(rD_, matrix);
+}
+
+//add by NUDT Exercise Group-Xiaowei:end
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 

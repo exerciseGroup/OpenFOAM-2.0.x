@@ -257,6 +257,19 @@ public:
             const FieldField<Field, scalar>& interfaceBouCoeffs_;
             const FieldField<Field, scalar>& interfaceIntCoeffs_;
             lduInterfaceFieldPtrsList interfaces_;
+             
+            /**add by NUDT Exercise Group-Xiaowei : begin**/
+            const FieldField<Field, scalar>& coupleBouCoeffs_;
+            const FieldField<Field, scalar>& coupleIntCoeffs_;
+            // add by NUDT Exercise Group-Xiaowei: end            
+
+
+            //add by NUDT Exercise Group-RXG:begin
+            //- Minimum number of iterations
+            //  (forced irrespective of convergence)
+            label minIter_;
+            //add by NUDT Exercise Group-RXG:end
+
 
             //- dictionary of controls
             dictionary controlDict_;
@@ -275,6 +288,12 @@ public:
 
             //- Read the control parameters from the controlDict_
             virtual void readControls();
+
+
+                   //add by NUDT Exercise Group-RXG: begin
+            //- Is the stop criterion reached
+            bool stop(lduMatrix::solverPerformance& solverPerf) const;
+            //add by NUDT Exercise Group-RXG: end
 
 
     public:
@@ -413,6 +432,29 @@ public:
                 const scalarField& Apsi,
                 scalarField& tmpField
             ) const;
+
+            
+            //add by NUDT Exercise Group-RXG: bengin
+            //add normFactor() with 5 args
+            scalar normFactor
+            (
+                const scalarField& x,
+                const scalarField& b,
+                const scalarField& Ax,
+                scalarField& tmpField,
+                const direction cmpt
+            ) const;
+            //add by NUDT Exercise Group-RXG: end
+
+            //add by NUDT Exercise Group-Xiaowei:begin
+            scalar normFactor
+            (
+             // const scalarField& x,//delete by NUDT Exercise Group-RXG
+                scalarField& x,//add by NUDT Exercise Group-RXG
+                const scalarField& b,
+                const direction cmpt
+            ) const;
+            //add by NUDT Exercise Group-Xiaowei:end
     };
 
 
@@ -427,6 +469,16 @@ public:
             const lduMatrix& matrix_;
             const FieldField<Field, scalar>& interfaceBouCoeffs_;
             const FieldField<Field, scalar>& interfaceIntCoeffs_;
+
+//add by NUDT Exercise Group-RXG: begin
+            //- Coupling boundary coefficients
+            const FieldField<Field, scalar>& coupleBouCoeffs_;
+
+            //- Coupling internal coefficients
+            const FieldField<Field, scalar>& coupleIntCoeffs_;
+
+//add by NUDT Exercise Group-RXG: end
+
             const lduInterfaceFieldPtrsList& interfaces_;
 
 
@@ -438,7 +490,8 @@ public:
         //- Runtime type information
         virtual const word& type() const = 0;
 
-
+// delete by NUDT Exercise Group-RXG: begin
+/*
         // Declare run-time constructor selection tables
 
             declareRunTimeSelectionTable
@@ -483,6 +536,92 @@ public:
                 )
             );
 
+// delete by NUDT Exercise Group-RXG: end
+*/
+
+// add by NUDT Exercise Group-RXG: begin
+        // Declare run-time constructor selection tables
+
+            declareRunTimeSelectionTable2
+            (
+                autoPtr,
+                smoother,
+                symMatrix,
+                (
+                 // new args
+                    const lduMatrix& matrix,
+                    const FieldField<Field, scalar>& coupleBouCoeffs,
+                    const FieldField<Field, scalar>& coupleIntCoeffs,
+                    const lduInterfaceFieldPtrsList& interfaces
+                ),
+                (
+                 // old args
+                    const word& fieldName,
+                    const lduMatrix& matrix,
+                    const FieldField<Field, scalar>& interfaceBouCoeffs,
+                    const FieldField<Field, scalar>& interfaceIntCoeffs,
+                    const lduInterfaceFieldPtrsList& interfaces
+                ),
+                (
+                 // new paras
+                    matrix,
+                    coupleBouCoeffs,
+                    coupleIntCoeffs,
+                    interfaces
+                ),
+                (
+                 // old paras
+                    fieldName,
+                    matrix,
+                    interfaceBouCoeffs,
+                    interfaceIntCoeffs,
+                    interfaces
+                )
+            );
+
+// add by NUDT Exercise Group-RXG: end
+// add by NUDT Exercise Group-RXG: begin
+        // Declare run-time constructor selection tables
+
+            declareRunTimeSelectionTable2
+            (
+                autoPtr,
+                smoother,
+                asymMatrix,
+                (
+                 // new args
+                    const lduMatrix& matrix,
+                    const FieldField<Field, scalar>& coupleBouCoeffs,
+                    const FieldField<Field, scalar>& coupleIntCoeffs,
+                    const lduInterfaceFieldPtrsList& interfaces
+                ),
+                (
+                 // old args
+                    const word& fieldName,
+                    const lduMatrix& matrix,
+                    const FieldField<Field, scalar>& interfaceBouCoeffs,
+                    const FieldField<Field, scalar>& interfaceIntCoeffs,
+                    const lduInterfaceFieldPtrsList& interfaces
+                ),
+                (
+                 // new paras
+                    matrix,
+                    coupleBouCoeffs,
+                    coupleIntCoeffs,
+                    interfaces
+                ),
+                (
+                 // old paras
+                    fieldName,
+                    matrix,
+                    interfaceBouCoeffs,
+                    interfaceIntCoeffs,
+                    interfaces
+                )
+            );
+
+// add by NUDT Exercise Group-RXG: end
+
 
         // Constructors
 
@@ -508,6 +647,33 @@ public:
                 const lduInterfaceFieldPtrsList& interfaces,
                 const dictionary& solverControls
             );
+
+//add by NUDT Exercise Group-RXG: begin
+/***********  add smoother Constructors and Selectors with 4 args   **********/
+        // Constructors
+
+            smoother
+            (
+                const lduMatrix& matrix,
+                const FieldField<Field, scalar>& coupleBouCoeffs,
+                const FieldField<Field, scalar>& coupleIntCoeffs,
+                const lduInterfaceFieldPtrsList& interfaces
+            );
+
+
+        // Selectors
+
+            //- Return a new smoother
+            static autoPtr<smoother> New
+            (
+                const lduMatrix& matrix,
+                const FieldField<Field, scalar>& coupleBouCoeffs,
+                const FieldField<Field, scalar>& coupleIntCoeffs,
+                const lduInterfaceFieldPtrsList& interfaces,
+                const dictionary& dict
+            );
+
+//add by NUDT Exercise Group-RXG: end
 
 
         //- Destructor
@@ -565,7 +731,19 @@ public:
 
             //- Reference to the base-solver this preconditioner is used with
             const solver& solver_;
+// add by NUDT Exercise Group-Xiaowei: begin
+            //- Matrix reference
+            const lduMatrix& matrix_;
 
+            //- Coupling boundary coefficients
+            const FieldField<Field, scalar>& coupleBouCoeffs_;
+
+            //- Coupling internal coefficients
+            const FieldField<Field, scalar>& coupleIntCoeffs_;
+
+            //- Coupling interfaces
+            const lduInterfaceFieldPtrsList& interfaces_;
+//add by NUDT Exercise Group-Xiaowei: end
 
     public:
 
@@ -575,7 +753,7 @@ public:
         //- Runtime type information
         virtual const word& type() const = 0;
 
-
+/*
         // Declare run-time constructor selection tables
 
             declareRunTimeSelectionTable
@@ -602,6 +780,65 @@ public:
                 (sol, solverControls)
             );
 
+*/
+
+//add by NUDT Exercise Group-Xiaowei:begin
+        // Declare run-time constructor selection tables
+
+            declareRunTimeSelectionTable2
+            (
+                autoPtr,
+                preconditioner,
+                symMatrix,
+                (
+                    const lduMatrix& matrix,
+                    const FieldField<Field, scalar>& coupleBouCoeffs,
+                    const FieldField<Field, scalar>& coupleIntCoeffs,
+                    const lduInterfaceFieldPtrsList& interfaces,
+                    const dictionary& dict
+                ),
+                (
+                    const solver& sol,
+                    const dictionary& solverControls
+                ),
+                (
+                    matrix,
+                    coupleBouCoeffs,
+                    coupleIntCoeffs,
+                    interfaces,
+                    dict
+                ),
+                (sol, solverControls)
+            );
+
+            declareRunTimeSelectionTable2
+            (
+                autoPtr,
+                preconditioner,
+                asymMatrix,
+                (
+                    const lduMatrix& matrix,
+                    const FieldField<Field, scalar>& coupleBouCoeffs,
+                    const FieldField<Field, scalar>& coupleIntCoeffs,
+                    const lduInterfaceFieldPtrsList& interfaces,
+                    const dictionary& dict
+                ),
+                (
+                    const solver& sol,
+                    const dictionary& solverControls
+                ),
+                (
+                    matrix,
+                    coupleBouCoeffs,
+                    coupleIntCoeffs,
+                    interfaces,
+                    dict
+                ),
+                (sol, solverControls)
+            );
+
+
+//add by NUDT Exercise Group-Xiaowei:end
 
         // Constructors
 
@@ -610,7 +847,13 @@ public:
                 const solver& sol
             )
             :
-                solver_(sol)
+                solver_(sol),
+                //add by NUDT Exercise Group-Xiaowei:begin
+                matrix_(sol.matrix()),
+                coupleBouCoeffs_(sol.interfaceBouCoeffs()),
+                coupleIntCoeffs_(sol.interfaceIntCoeffs()),
+                interfaces_(sol.interfaces())
+                //add by NUDT Exercise Group-Xiaowei:end
             {}
 
 
@@ -623,6 +866,32 @@ public:
                 const dictionary& solverControls
             );
 
+
+//add by NUDT Exercise Group-Xiaowei:begin
+
+        // Constructors
+
+            preconditioner
+            (
+                const lduMatrix& matrix,
+                const FieldField<Field, scalar>& coupleBouCoeffs,
+                const FieldField<Field, scalar>& coupleIntCoeffs,
+                const lduInterfaceFieldPtrsList& interfaces
+            );
+
+
+        // Selectors
+
+            //- Return a new preconditioner
+            static autoPtr<preconditioner> New
+            (
+                const lduMatrix& matrix,
+                const FieldField<Field, scalar>& coupleBouCoeffs,
+                const FieldField<Field, scalar>& coupleIntCoeffs,
+                const lduInterfaceFieldPtrsList& interfaces,
+                const dictionary& dict
+            );
+//add by NUDT Exercise Group-Xiaowei:end
 
         //- Destructor
         virtual ~preconditioner()
@@ -872,6 +1141,15 @@ public:
 
         friend Ostream& operator<<(Ostream&, const lduMatrix&);
 };
+
+
+//add by NUDT Exercise Group-Xiaowei
+typedef lduMatrix::solver lduSolver;
+typedef lduMatrix::solverPerformance lduSolverPerformance;
+typedef lduMatrix::preconditioner lduPreconditioner;
+typedef lduMatrix::smoother lduSmoother;
+typedef UPtrList<const Foam::lduInterfaceField> lduInterfaceFieldPtrsList;
+//end add
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

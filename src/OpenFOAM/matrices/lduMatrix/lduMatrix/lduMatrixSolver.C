@@ -152,6 +152,9 @@ Foam::lduMatrix::solver::solver
     matrix_(matrix),
     interfaceBouCoeffs_(interfaceBouCoeffs),
     interfaceIntCoeffs_(interfaceIntCoeffs),
+    coupleBouCoeffs_(interfaceBouCoeffs),//add by NUDT Exercise Group-Xiaowei
+    coupleIntCoeffs_(interfaceIntCoeffs),//add by NUDT Exercise Group-Xiaowei
+    minIter_(0),
     interfaces_(interfaces),
     controlDict_(solverControls)
 {
@@ -193,6 +196,85 @@ Foam::scalar Foam::lduMatrix::solver::normFactor
     // At convergence this simpler method is equivalent to the above
     // return 2*gSumMag(source) + matrix_.small_;
 }
+
+//add by NUDT Exercise Group-RXG: begin
+Foam::scalar Foam::lduMatrix::solver::normFactor
+(
+    const scalarField& x,
+    const scalarField& b,
+    const scalarField& Ax,
+    scalarField& tmpField,
+    const direction cmpt
+) const
+{
+    // Calculate A dot reference value of x
+//     matrix_.sumA(tmpField, coupleBouCoeffs_, interfaces_);
+//     tmpField *= gAverage(x);
+
+    // Calculate normalisation factor using full multiplication
+    // with mean value.  HJ, 5/Nov/2007
+    scalar xRef = gAverage(x);
+    matrix_.Amul
+    (
+        tmpField,
+        scalarField(x.size(), xRef),
+        coupleBouCoeffs_,
+        interfaces_,
+        cmpt
+    );
+
+    return gSum(mag(Ax - tmpField) + mag(b - tmpField)) + matrix_.small_;
+
+    // At convergence this simpler method is equivalent to the above
+    // return 2*gSumMag(b) + matrix_.small_;
+}
+//add by NUDT Exercise Group-RXG: end
+
+//add by NUDT Exercise Group-Xiaowei:begin
+Foam::scalar Foam::lduMatrix::solver::normFactor
+(
+ // const scalarField& x,// delete by NUDT Exercise Group-RXG
+    scalarField& x,// add by NUDT Exercise Group-RXG
+    const scalarField& b,
+    const direction cmpt
+) const
+{
+    scalarField wA(x.size());
+    scalarField tmpField(x.size());
+
+    matrix_.Amul(wA, x, coupleBouCoeffs_, interfaces_, cmpt);
+
+    return normFactor(x, b, wA, tmpField, cmpt);
+}
+
+//add by NUDT Exercise Group-Xiaowei:end
+
+// add by NUDT Exercise Group-RXG: begin
+bool Foam::lduMatrix::solver::stop
+(
+    lduMatrix::solverPerformance& solverPerf
+) const
+{
+    if (solverPerf.nIterations() < minIter_)
+    {
+        return false;
+    }
+
+    if
+    (
+        solverPerf.nIterations() >= maxIter_
+     || solverPerf.checkConvergence(tolerance_, relTol_)//modified by NUDT Exercise Group-Xiaowei
+    )
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+// add by NUDT Exercise Group-RXG: end
 
 
 // ************************************************************************* //

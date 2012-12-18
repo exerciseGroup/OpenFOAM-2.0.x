@@ -29,8 +29,16 @@ License
 
 namespace Foam
 {
+
     defineTypeNameAndDebug(GAMGInterface, 0);
-    defineRunTimeSelectionTable(GAMGInterface, lduInterface);
+// delete by NUDT Exercise Group-RXG: begin
+//    defineRunTimeSelectionTable(GAMGInterface, lduInterface);
+// delete by NUDT Exercise Group-RXG: end
+
+// add by NUDT Exercise Group-RXG: begin
+    defineRunTimeSelectionTable2(GAMGInterface, lduInterface);
+// add by NUDT Exercise Group-RXG: end
+
 }
 
 

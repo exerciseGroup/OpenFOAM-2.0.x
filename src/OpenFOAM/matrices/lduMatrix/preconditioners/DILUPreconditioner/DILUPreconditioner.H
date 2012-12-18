@@ -73,6 +73,20 @@ public:
             const dictionary& solverControlsUnused
         );
 
+//add by NUDT Exercise Group-Xiaowei:begin
+
+        //- Construct from matrix components and preconditioner solver controls
+        DILUPreconditioner
+        (
+            const lduMatrix& matrix,
+            const FieldField<Field, scalar>& coupleBouCoeffs,
+            const FieldField<Field, scalar>& coupleIntCoeffs,
+            const lduInterfaceFieldPtrsList& interfaces,
+            const dictionary& dict
+        );
+
+//end by NUDT Exercise Group-Xiaowei:end
+
 
     //- Destructor
     virtual ~DILUPreconditioner()

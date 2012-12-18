@@ -120,7 +120,10 @@ void Foam::GAMGPreconditioner::precondition
         if (cycle < nVcycles_-1)
         {
             // Calculate finest level residual field
-            matrix_.Amul(AwA, wA, interfaceBouCoeffs_, interfaces_, cmpt);
+            //add by NUDT Exercise Group-Xiaowei: begin
+           //matrix_.Amul(AwA, wA, interfaceBouCoeffs_, interfaces_, cmpt);
+            lduMatrix::preconditioner::matrix_.Amul(AwA, wA, interfaceBouCoeffs_,lduMatrix::preconditioner::interfaces_, cmpt);
+            // add by NUDT Exercise Group-Xiaowei:end
             finestResidual = rA;
             finestResidual -= AwA;
         }
